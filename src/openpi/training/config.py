@@ -291,7 +291,7 @@ class LeRobotLiberoDataConfig(DataConfigFactory):
             data_transforms=data_transforms,
             model_transforms=model_transforms,
         )
-        
+
 
 @dataclasses.dataclass(frozen=True)
 class LeRobotLite6DataConfig(DataConfigFactory):
@@ -301,16 +301,16 @@ class LeRobotLite6DataConfig(DataConfigFactory):
     # the space used by the pi internal runtime which was used to train the base model. People who
     # use standard Lite6 data should set this to true.
     adapt_to_pi: bool = True
-    
+
     # Action keys that will be used to read the action sequence from the dataset.
     action_sequence_keys: Sequence[str] = ("action",)
-    
+
     # Make inputs look like they come from the Libero environment
     repack_transform = _transforms.Group(
         inputs=[
             _transforms.RepackTransform(
                 {
-                    "wrist_rgb" : "bservation.images.wrist.rgb", # key: value given to pi0, value: key in the lerobot dataset
+                    "wrist_rgb": "observation.images.wrist.rgb",  # key: value given to pi0, value: key in the lerobot dataset
                     "base_rgb": "observation.images.base.rgb",
                     "state": "observation.state",
                     "actions": "action",
@@ -319,14 +319,14 @@ class LeRobotLite6DataConfig(DataConfigFactory):
             )
         ]
     )
-    
+
     @override
     def create(self, assets_dirs: pathlib.Path, model_config: _model.BaseModelConfig) -> DataConfig:
 
         # Prepare data for policy training
         # Convert images to uint8 numpy arrays, add masks
         data_transforms = _transforms.Group(
-            inputs=[lite6_policy.Lite6Inputs(action_dim=model_config.action_dim, model_type=model_config.model_type)],
+            inputs=[lite6_policy.Lite6Inputs(action_dim=model_config.action_dim)],
             outputs=[lite6_policy.Lite6Outputs(adapt_to_pi=self.adapt_to_pi)],
         )
 
@@ -338,9 +338,8 @@ class LeRobotLite6DataConfig(DataConfigFactory):
             repack_transforms=self.repack_transform,
             data_transforms=data_transforms,
             model_transforms=model_transforms,
-            action_sequence_keys=self.action_sequence_keys
+            action_sequence_keys=self.action_sequence_keys,
         )
-
 
 
 @dataclasses.dataclass(frozen=True)
@@ -556,12 +555,11 @@ _CONFIGS = [
     #
     # Fine-tuning lite6 configs.
     #
-    
     TrainConfig(
         name="pi0_lite6_low_mem_finetune",
         model=pi0.Pi0Config(paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m_lora"),
-        data=LeRobotLiberoDataConfig(
-            repo_id="physical-intelligence/libero",
+        data=LeRobotLite6DataConfig(
+            repo_id="data/lite6_pick_place115",
             base_config=DataConfig(
                 local_files_only=True,  # Set to True for local-only datasets.
                 prompt_from_task=True,
@@ -570,11 +568,10 @@ _CONFIGS = [
         weight_loader=weight_loaders.CheckpointWeightLoader("s3://openpi-assets/checkpoints/pi0_base/params"),
         num_train_steps=20_000,
         freeze_filter=pi0.Pi0Config(
-            paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m_lora"
+            paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m"
         ).get_freeze_filter(),
         ema_decay=None,
     ),
-    
     #
     # Fine-tuning Aloha configs.
     #

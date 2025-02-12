@@ -13,7 +13,7 @@ def make_lite6_example() -> dict:
     return {
         "wrist_rgb": np.random.randint(256, size=(640, 480, 3), dtype=np.uint8),
         "base_rgb": np.random.randint(256, size=(640, 480, 3), dtype=np.uint8),
-        "state": np.ones((7,)), # 6 joints and 1 gripper
+        "state": np.ones((7,)),  # 6 joints and 1 gripper
         "prompt": "do something",
     }
 
@@ -157,11 +157,11 @@ def _decode_lite6(data: dict, *, adapt_to_pi: bool = False) -> dict:
         img = img.resize(size, Image.Resampling.BICUBIC)
         return np.array(img)
 
-    images = data["images"]
-    images_dict = {name: convert_image(img) for name, img in images.items()}
-
-    data["images"] = images_dict
+    image_keys = ["wrist_rgb", "base_rgb"]
+    for key in image_keys:
+        data[key] = convert_image(data[key])
     data["state"] = state
+
     return data
 
 
