@@ -150,7 +150,8 @@ def _decode_lite6(data: dict, *, adapt_to_pi: bool = False) -> dict:
         if np.issubdtype(img.dtype, np.floating):
             img = (255 * img).astype(np.uint8)
         # Convert from [channel, height, width] to [height, width, channel].
-        img = einops.rearrange(img, "c h w -> h w c")
+        if img.shape[0] == 3:
+            img = einops.rearrange(img, "c h w -> h w c")
 
         size = (224, 224)  # pi0の画像サイズに合わせる
         img = Image.fromarray(img)
